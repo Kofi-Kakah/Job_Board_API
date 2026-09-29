@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 
 import authRoutes from "./src/routes/auth.routes.js"
 import connectDB from "./database/db.js"
+import parseCookies from "./src/middleware/cookieParser.middleware.js"
 
 const app = express()
 
@@ -11,7 +12,7 @@ dotenv.config()
 const PORT = process.env.PORT || 5000
 
 app.use(express.json())
-//app.use(cookieParser())
+app.use(parseCookies)
 
 app.use("/api/v1/auth",authRoutes)
 

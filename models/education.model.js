@@ -22,7 +22,7 @@ const educationSchema = new mongoose.Schema({
     },
     description: { 
         type: String,
-        rim: true, 
+        trim: true, 
         maxlength: 3000 
     },
 }, { timestamps: true });
