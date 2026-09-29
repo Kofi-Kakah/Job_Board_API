@@ -8,6 +8,7 @@ import experienceRoutes from "./src/routes/experience.routes.js"
 import educationRoutes from "./src/routes/education.routes.js"
 import resumeRoutes from "./src/routes/resume.routes.js"
 import applicationRoutes from "./src/routes/application.routes.js"
+import jobRoutes from "./src/routes/job.routes.js"
 import connectDB from "./database/db.js"
 import parseCookies from "./src/middleware/cookieParser.middleware.js"
 
@@ -26,7 +27,8 @@ app.use("/api/v1/companies", companyRoutes)
 app.use("/api/v1/experiences", experienceRoutes)
 app.use("/api/v1/education", educationRoutes)
 app.use("/api/v1/resumes", resumeRoutes)
-app.use("/api/v1/application", applicationRoutes)
+app.use("/api/v1", applicationRoutes)
+app.use("/api/v1/jobs", jobRoutes)
 
 const startServer = async () => {
     try {

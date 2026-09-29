@@ -12,9 +12,16 @@ const authCookieOptions = {
 
 export const signup = async (req, res) => {
     try {
-        const { username, email, password, role } = req.body;
+        const { email, password, role } = req.body;
+        const suppliedName = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+        const username = typeof req.body.username === 'string'
+            ? req.body.username.trim()
+            : suppliedName;
         if (!username || !email || !password) {
-            return res.status(400).json({ message: 'username, email, and password are required.' });
+            return res.status(400).json({ message: 'name (or username), email, and password are required.' });
+        }
+        if (typeof email !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ message: 'Email and password must be strings.' });
         }
         if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters.' });
         if (role && !['candidate', 'employer'].includes(role)) {
@@ -25,13 +32,18 @@ export const signup = async (req, res) => {
         const duplicate = await User.findOne({ $or: [{ email: normalizedEmail }, { username: username.trim() }] });
         if (duplicate) return res.status(409).json({ message: 'Email or username is already registered.' });
 
-        const user = await User.create({
-            username: username.trim(),
+        const user = new User({
+            username,
             email: normalizedEmail,
             password: await bcrypt.hash(password, 12),
             role: role || 'candidate',
+            ...(suppliedName && {
+                firstName: suppliedName.split(/\s+/)[0],
+                lastName: suppliedName.split(/\s+/).slice(1).join(' '),
+            }),
         });
         const token = signToken(user);
+        await user.save();
         res.cookie('authToken', token, authCookieOptions);
         return res.status(201).json({
             message: 'Account created.',

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Application from '../../models/application.model.js';
 import User from '../../models/user.model.js';
+import Job from '../../models/job.model.js';
 
 export const applyToJob = async (req, res) => {
     try {
@@ -9,6 +10,8 @@ export const applyToJob = async (req, res) => {
         if (!mongoose.isValidObjectId(jobId)) return res.status(400).json({ message: 'Invalid job ID.' });
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found.' });
+        const job = await Job.findOne({ _id: jobId, status: 'open' });
+        if (!job) return res.status(404).json({ message: 'Open job not found.' });
         if (req.body.resume && !user.resumes.some(id => id.equals(req.body.resume))) {
             return res.status(400).json({ message: 'Resume must belong to your profile.' });
         }
@@ -46,5 +49,43 @@ export const withdrawApplication = async (req, res) => {
         return res.json({ application });
     } catch (error) {
         return res.status(400).json({ message: 'Could not withdraw application.', error: error.message });
+    }
+};
+
+export const listJobApplications = async (req, res) => {
+    try {
+        if (req.user.role !== 'employer') return res.status(403).json({ message: 'Employer account required.' });
+        const job = await Job.findOne({ _id: req.params.jobId, postedBy: req.user.id });
+        if (!job) return res.status(404).json({ message: 'Job not found or not owned by you.' });
+        const filter = { job: job._id };
+        if (req.query.status) filter.status = req.query.status;
+        const applications = await Application.find(filter)
+            .populate('candidate', 'username firstName lastName headline skills experienceLevel yearsOfExperience location')
+            .populate('resume')
+            .sort({ appliedAt: -1 });
+        return res.json({ applications });
+    } catch (error) {
+        return res.status(400).json({ message: 'Could not load job applications.', error: error.message });
+    }
+};
+
+export const updateApplicationStatus = async (req, res) => {
+    try {
+        if (req.user.role !== 'employer') return res.status(403).json({ message: 'Employer account required.' });
+        const allowedStatuses = ['viewed', 'shortlisted', 'interviewing', 'offered', 'rejected'];
+        const { status } = req.body;
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({ message: `status must be one of: ${allowedStatuses.join(', ')}.` });
+        }
+        const application = await Application.findById(req.params.applicationId);
+        if (!application) return res.status(404).json({ message: 'Application not found.' });
+        const job = await Job.exists({ _id: application.job, postedBy: req.user.id });
+        if (!job) return res.status(404).json({ message: 'Application not found for your jobs.' });
+        application.status = status;
+        application.lastUpdatedAt = new Date();
+        await application.save();
+        return res.json({ application });
+    } catch (error) {
+        return res.status(400).json({ message: 'Could not update application status.', error: error.message });
     }
 };
