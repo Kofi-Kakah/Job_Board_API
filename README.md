@@ -95,7 +95,7 @@ Requests are handled by route modules in `src/routes/`. Protected routes use the
 ### Install and run
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Kofi-Kakah/Job_Board_API.git
 cd Job_Board_API
 npm install
 ```
